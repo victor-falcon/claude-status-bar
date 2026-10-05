@@ -53,6 +53,17 @@ export type StatusIcons = {
 
 export type StatusOptions = { show: StatusSections; icons: StatusIcons }
 
+/** Nerd Font glyphs, written as code points so an editor or font that cannot draw them keeps them. */
+const DEFAULT_ICONS: StatusIcons = {
+  branch: '\u{EA64} ',
+  diff: '',
+  pullRequest: ' \u{E709}',
+  checksPassed: ' \u{F012C}',
+  checksFailed: ' \u{F467}',
+  checksPending: ' \u{F051F}',
+  usage: '',
+}
+const NO_ICON = 'none'
 
 const COLOR_BRANCH = 'blue'
 const COLOR_ADDED = 'green'
@@ -134,15 +145,20 @@ export function toUsage(rateLimits: readonly SessionRateLimit[]): Usage {
 }
 
 /**
- * Reads the mod's `userConfig` values. Their defaults live in plugin.json; a value
- * that is missing keeps its section shown and draws no icon.
+ * Reads the mod's `userConfig` values. A missing section stays shown. An empty icon
+ * draws its default, since Claude Code's install dialog shows text fields blank
+ * whatever their default; `none` draws no icon.
  */
 export function toStatusOptions(options: PluginOptions): StatusOptions {
   const isShown = (key: string): boolean => options[key] !== false
-  const iconFor = (key: string): string => {
+  const iconFor = (key: string, fallback: string): string => {
     const value = options[key]
 
-    return typeof value === 'string' ? value : ''
+    if (typeof value !== 'string' || value === '') {
+      return fallback
+    }
+
+    return value.trim().toLowerCase() === NO_ICON ? '' : value
   }
 
   return {
@@ -154,13 +170,13 @@ export function toStatusOptions(options: PluginOptions): StatusOptions {
       usage: isShown('showUsage'),
     },
     icons: {
-      branch: iconFor('iconBranch'),
-      diff: iconFor('iconDiff'),
-      pullRequest: iconFor('iconPullRequest'),
-      checksPassed: iconFor('iconChecksPassed'),
-      checksFailed: iconFor('iconChecksFailed'),
-      checksPending: iconFor('iconChecksPending'),
-      usage: iconFor('iconUsage'),
+      branch: iconFor('iconBranch', DEFAULT_ICONS.branch),
+      diff: iconFor('iconDiff', DEFAULT_ICONS.diff),
+      pullRequest: iconFor('iconPullRequest', DEFAULT_ICONS.pullRequest),
+      checksPassed: iconFor('iconChecksPassed', DEFAULT_ICONS.checksPassed),
+      checksFailed: iconFor('iconChecksFailed', DEFAULT_ICONS.checksFailed),
+      checksPending: iconFor('iconChecksPending', DEFAULT_ICONS.checksPending),
+      usage: iconFor('iconUsage', DEFAULT_ICONS.usage),
     },
   }
 }

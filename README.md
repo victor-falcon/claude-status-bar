@@ -62,13 +62,15 @@ stores them in `settings.json` under `pluginConfigs`, and the mod reloads as soo
 | `iconChecksPending` | Nerd Font hourglass | Drawn before the checks while some are still running |
 | `iconUsage` | none | Drawn before the plan usage |
 
-Icons are used as written, spaces included; leave one empty to draw no icon.
+Icons are used as written, spaces included. Leave one empty for its default, or write `none` to draw no icon. The
+dialog Claude Code opens on install shows every icon field empty, as it never fills a text field with its default:
+save it as it is to keep the default icons.
 
 ## Customize
 
-Colors and thresholds are constants at the top of [`hooks/format.ts`](hooks/format.ts) (`COLOR_*`,
-`PULL_REQUEST_COLORS`, `USAGE_WARNING_PERCENT`, `USAGE_CRITICAL_PERCENT`). Colors are a Claude Code theme key or a raw
-color (`green`, `#ff8700`).
+Default icons, colors and thresholds are constants at the top of [`hooks/format.ts`](hooks/format.ts) (`DEFAULT_ICONS`,
+`COLOR_*`, `PULL_REQUEST_COLORS`, `USAGE_WARNING_PERCENT`, `USAGE_CRITICAL_PERCENT`). Colors are a Claude Code theme
+key or a raw color (`green`, `#ff8700`).
 
 To run your own copy, clone this repository and load it from disk instead of installing it:
 

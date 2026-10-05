@@ -42,7 +42,7 @@ const FEATURE_BRANCH: StatusInfo = {
   usage: { session: 23.4, week: 40.6 },
 }
 
-/** Every section shown, no icons: what a missing option falls back to. */
+/** Every section shown with its default icons: what missing options fall back to. */
 const ALL_SECTIONS = toStatusOptions({})
 
 /** Text without its Nerd Font icons and spacing, which are styling. */
@@ -158,6 +158,26 @@ describe('options', () => {
     expect(line?.startsWith('B> feat/x')).toBe(true)
     expect(line).toContain('PR> Open')
     expect(line).toContain('OK> 5/5')
+  })
+
+  test('draws the default icon for an empty one, and no icon for none', () => {
+    const branchIcon = (iconBranch: string): string | undefined =>
+      formatStatus(FEATURE_BRANCH, toStatusOptions({ iconBranch }))?.[0]?.text
+
+    expect(branchIcon('')).toBe('\u{EA64} ')
+    expect(branchIcon('none')).toBe('')
+    expect(branchIcon(' None ')).toBe('')
+    expect(branchIcon(' ')).toBe(' ')
+  })
+
+  test('draws the default icons when the options are left at their defaults', async ($, on) => {
+    stubWorld(on, 'feat/status-bar')
+    await startSession($, on)
+
+    const ui = await $.ui.mount({ plugin: 'status-bar', surface: 'terminal', component: 'PromptHint', props: HINT })
+
+    expect((await ui.find({ type: 'Text', text: /^\u{EA64}\s*$/u }))?.props.color).toBe('blue')
+    expect(await ui.find({ type: 'Text', text: /\u{F467} 3\/4$/u })).toBeDefined()
   })
 })
 

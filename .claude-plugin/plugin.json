@@ -1,6 +1,6 @@
 {
   "name": "status-bar",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
   "author": {
     "name": "Víctor Falcón",
@@ -53,44 +53,37 @@
     "iconBranch": {
       "type": "string",
       "title": "Branch icon",
-      "description": "Drawn before the branch name. Spaces count; leave it empty for no icon.",
-      "default": " "
+      "description": "Drawn before the branch name. Leave it empty for the Nerd Font branch, or write none for no icon. Spaces count."
     },
     "iconDiff": {
       "type": "string",
       "title": "Diff icon",
-      "description": "Drawn before the added and removed lines. Spaces count; leave it empty for no icon.",
-      "default": ""
+      "description": "Drawn before the added and removed lines. Leave it empty for no icon. Spaces count."
     },
     "iconPullRequest": {
       "type": "string",
       "title": "Pull request icon",
-      "description": "Drawn before the pull request state. Spaces count; leave it empty for no icon.",
-      "default": " "
+      "description": "Drawn before the pull request state. Leave it empty for the Nerd Font GitHub icon, or write none for no icon. Spaces count."
     },
     "iconChecksPassed": {
       "type": "string",
       "title": "CI passed icon",
-      "description": "Drawn before the checks when every one passed. Spaces count; leave it empty for no icon.",
-      "default": " 󰄬"
+      "description": "Drawn before the checks when every one passed. Leave it empty for the Nerd Font check, or write none for no icon. Spaces count."
     },
     "iconChecksFailed": {
       "type": "string",
       "title": "CI failed icon",
-      "description": "Drawn before the checks when any failed. Spaces count; leave it empty for no icon.",
-      "default": " "
+      "description": "Drawn before the checks when any failed. Leave it empty for the Nerd Font cross, or write none for no icon. Spaces count."
     },
     "iconChecksPending": {
       "type": "string",
       "title": "CI running icon",
-      "description": "Drawn before the checks while some are still running. Spaces count; leave it empty for no icon.",
-      "default": " 󰔟"
+      "description": "Drawn before the checks while some are still running. Leave it empty for the Nerd Font hourglass, or write none for no icon. Spaces count."
     },
     "iconUsage": {
       "type": "string",
       "title": "Usage icon",
-      "description": "Drawn before the plan usage. Spaces count; leave it empty for no icon.",
-      "default": ""
+      "description": "Drawn before the plan usage. Leave it empty for no icon. Spaces count."
     }
   }
 }
