@@ -40,9 +40,33 @@ If you had a `statusLine` command in your settings, you can remove it: this mod 
   Claude.
 - Usage: whenever Claude Code measures it again.
 
+## Configure
+
+Every section can be switched off and every icon changed from `/config`, where each option is a row. Claude Code
+stores them in `settings.json` under `pluginConfigs`, and the mod reloads as soon as one changes.
+
+![The mod's options in /config: a switch per section and a field per icon](assets/config.png)
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `showBranch` | `true` | Show the branch |
+| `showDiff` | `true` | Show the lines added and removed (off, the mod skips `git diff`) |
+| `showPullRequest` | `true` | Show the pull request state |
+| `showChecks` | `true` | Show the CI checks (with the pull request off too, the mod never calls `gh`) |
+| `showUsage` | `true` | Show the plan usage |
+| `iconBranch` | Nerd Font branch | Drawn before the branch name |
+| `iconDiff` | none | Drawn before the added and removed lines |
+| `iconPullRequest` | Nerd Font GitHub | Drawn before the pull request state |
+| `iconChecksPassed` | Nerd Font check | Drawn before the checks when every one passed |
+| `iconChecksFailed` | Nerd Font cross | Drawn before the checks when any failed |
+| `iconChecksPending` | Nerd Font hourglass | Drawn before the checks while some are still running |
+| `iconUsage` | none | Drawn before the plan usage |
+
+Icons are used as written, spaces included; leave one empty to draw no icon.
+
 ## Customize
 
-Icons, colors and thresholds are constants at the top of [`hooks/format.ts`](hooks/format.ts) (`ICON_*`, `COLOR_*`,
+Colors and thresholds are constants at the top of [`hooks/format.ts`](hooks/format.ts) (`COLOR_*`,
 `PULL_REQUEST_COLORS`, `USAGE_WARNING_PERCENT`, `USAGE_CRITICAL_PERCENT`). Colors are a Claude Code theme key or a raw
 color (`green`, `#ff8700`).
 

@@ -2,8 +2,15 @@ import type { On, ProcessRunResult, RenderElement, RenderPropsOf } from 'claude-
 import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import { formatStatus, parseNumstat, spansToText, summarizeChecks, toPullRequest } from '../hooks/format'
-import type { StatusInfo } from '../hooks/format'
+import {
+  formatStatus,
+  parseNumstat,
+  spansToText,
+  summarizeChecks,
+  toPullRequest,
+  toStatusOptions,
+} from '../hooks/format'
+import type { StatusInfo, StatusOptions } from '../hooks/format'
 
 const ok = (stdout: string): ProcessRunResult => ({
   exitCode: 0,
@@ -35,23 +42,32 @@ const FEATURE_BRANCH: StatusInfo = {
   usage: { session: 23.4, week: 40.6 },
 }
 
-/** The line's words in order, without its Nerd Font icons and spacing, which are styling. */
-function plain(info: StatusInfo): string | undefined {
-  return spansToText(formatStatus(info))
+/** Every section shown, no icons: what a missing option falls back to. */
+const ALL_SECTIONS = toStatusOptions({})
+
+/** Text without its Nerd Font icons and spacing, which are styling. */
+function words(text: string | undefined): string | undefined {
+  return text
     ?.replace(/[\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
+/** The line's words in order. */
+function plain(info: StatusInfo, options: StatusOptions = ALL_SECTIONS): string | undefined {
+  return words(spansToText(formatStatus(info, options)))
+}
+
 /** The color of the span whose text includes `text`. */
 function colorOf(info: StatusInfo, text: string): string | undefined {
-  return formatStatus(info)?.find(span => span.text.includes(text))?.color
+  return formatStatus(info, ALL_SECTIONS)?.find(span => span.text.includes(text))?.color
 }
 
 /** Answers git and gh the way a feature branch with an open PR would; the hint stands in for the engine's. */
-function stubWorld(on: On, branch: string): void {
+function stubWorld(on: On, branch: string, commands: string[] = []): void {
   on('process.run', ($, e) => {
     const command = e.argv.join(' ')
+    commands.push(command)
 
     if (command === 'gh pr view --json state,isDraft,statusCheckRollup') {
       return { value: ok(PULL_REQUEST) }
@@ -122,7 +138,26 @@ describe('format', () => {
   test('leaves out what it does not know', () => {
     expect(plain({ branch: 'main', diff: { added: 0, removed: 0 }, usage: {} })).toBe('main')
     expect(plain({ usage: { session: 7 } })).toBe('Session usage 7%')
-    expect(formatStatus({ usage: {} })).toBeUndefined()
+    expect(formatStatus({ usage: {} }, ALL_SECTIONS)).toBeUndefined()
+  })
+})
+
+describe('options', () => {
+  test('hides the sections switched off', () => {
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showDiff: false, showUsage: false }))).toBe('feat/x Open 5/5')
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showPullRequest: false }))).not.toContain('Open')
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showPullRequest: false }))).toContain('5/5')
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showBranch: false, showChecks: false }))).not.toMatch(/feat\/x|5\/5/)
+  })
+
+  test('draws the configured icons', () => {
+    const line = spansToText(
+      formatStatus(FEATURE_BRANCH, toStatusOptions({ iconBranch: 'B>', iconPullRequest: 'PR>', iconChecksPassed: 'OK>' })),
+    )
+
+    expect(line?.startsWith('B> feat/x')).toBe(true)
+    expect(line).toContain('PR> Open')
+    expect(line).toContain('OK> 5/5')
   })
 })
 
@@ -131,7 +166,7 @@ describe('colors', () => {
     expect(colorOf(FEATURE_BRANCH, '+45')).toBe('green')
     expect(colorOf(FEATURE_BRANCH, '-12')).toBe('red')
     expect(colorOf(FEATURE_BRANCH, 'feat/x')).toBeUndefined()
-    expect(formatStatus(FEATURE_BRANCH)?.[0]?.color).toBeDefined()
+    expect(formatStatus(FEATURE_BRANCH, ALL_SECTIONS)?.[0]?.color).toBeDefined()
   })
 
   test('colors the PR state by what happened to it', () => {
@@ -174,15 +209,13 @@ describe('prompt hint', () => {
       const ui = await $.ui.mount({ plugin: 'status-bar', surface, component: 'PromptHint', props: HINT })
 
       expect(await ui.find({ type: 'Text', text: '? for shortcuts' })).toBeDefined()
-      expect((await ui.find({ type: 'Text', text: /feat\/status-bar.*Session usage 23%/ }))?.text).toContain(
-        spansToText(
-          formatStatus({
-            branch: 'feat/status-bar',
-            diff: { added: 45, removed: 12 },
-            pullRequest: { state: 'Open', checks: { passed: 3, failed: 1, pending: 0, total: 4 } },
-            usage: { session: 23.4, week: 40.6 },
-          }),
-        ),
+      expect(words((await ui.find({ type: 'Text', text: /feat\/status-bar.*Session usage 23%/ }))?.text)).toBe(
+        plain({
+          branch: 'feat/status-bar',
+          diff: { added: 45, removed: 12 },
+          pullRequest: { state: 'Open', checks: { passed: 3, failed: 1, pending: 0, total: 4 } },
+          usage: { session: 23.4, week: 40.6 },
+        }),
       )
       expect((await ui.find({ type: 'Text', text: /^\+45$/ }))?.props.color).toBe('green')
       expect((await ui.find({ type: 'Text', text: /^-12$/ }))?.props.color).toBe('red')
@@ -208,4 +241,20 @@ describe('prompt hint', () => {
 
     expect(usage?.props.color).toBe('red')
   })
+
+  test(
+    'skips gh and git diff when their sections are off',
+    { options: { showDiff: false, showPullRequest: false, showChecks: false } },
+    async ($, on) => {
+      const commands: string[] = []
+      stubWorld(on, 'feat/status-bar', commands)
+      await startSession($, on)
+
+      const ui = await $.ui.mount({ plugin: 'status-bar', surface: 'terminal', component: 'PromptHint', props: HINT })
+      const line = words((await ui.find({ type: 'Text', text: /feat\/status-bar/ }))?.text)
+
+      expect(commands.some(command => command.startsWith('gh ') || command.startsWith('git diff'))).toBe(false)
+      expect(line).toBe('feat/status-bar · Session usage 23% (Week 41%)')
+    },
+  )
 })

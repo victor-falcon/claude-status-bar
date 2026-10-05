@@ -1,6 +1,6 @@
 {
   "name": "status-bar",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
   "author": {
     "name": "Víctor Falcón",
@@ -9,6 +9,88 @@
   "homepage": "https://github.com/victor-falcon/claude-status-bar",
   "repository": "https://github.com/victor-falcon/claude-status-bar",
   "license": "MIT",
-  "keywords": ["status-line", "git", "github", "pull-request", "ci", "usage", "mod"],
-  "types": "./types/index.d.ts"
+  "keywords": [
+    "status-line",
+    "git",
+    "github",
+    "pull-request",
+    "ci",
+    "usage",
+    "mod"
+  ],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "showBranch": {
+      "type": "boolean",
+      "title": "Show branch",
+      "description": "The current branch, or the short SHA on a detached HEAD.",
+      "default": true
+    },
+    "showDiff": {
+      "type": "boolean",
+      "title": "Show diff",
+      "description": "Lines added and removed against the merge base with the default branch, uncommitted work included.",
+      "default": true
+    },
+    "showPullRequest": {
+      "type": "boolean",
+      "title": "Show pull request",
+      "description": "The state of the branch's pull request: Merged, Closed, Draft or Open. Needs the GitHub CLI.",
+      "default": true
+    },
+    "showChecks": {
+      "type": "boolean",
+      "title": "Show CI checks",
+      "description": "Passed checks out of the total for the branch's pull request. Needs the GitHub CLI.",
+      "default": true
+    },
+    "showUsage": {
+      "type": "boolean",
+      "title": "Show plan usage",
+      "description": "The plan's 5-hour session usage and weekly usage.",
+      "default": true
+    },
+    "iconBranch": {
+      "type": "string",
+      "title": "Branch icon",
+      "description": "Drawn before the branch name. Spaces count; leave it empty for no icon.",
+      "default": " "
+    },
+    "iconDiff": {
+      "type": "string",
+      "title": "Diff icon",
+      "description": "Drawn before the added and removed lines. Spaces count; leave it empty for no icon.",
+      "default": ""
+    },
+    "iconPullRequest": {
+      "type": "string",
+      "title": "Pull request icon",
+      "description": "Drawn before the pull request state. Spaces count; leave it empty for no icon.",
+      "default": " "
+    },
+    "iconChecksPassed": {
+      "type": "string",
+      "title": "CI passed icon",
+      "description": "Drawn before the checks when every one passed. Spaces count; leave it empty for no icon.",
+      "default": " 󰄬"
+    },
+    "iconChecksFailed": {
+      "type": "string",
+      "title": "CI failed icon",
+      "description": "Drawn before the checks when any failed. Spaces count; leave it empty for no icon.",
+      "default": " "
+    },
+    "iconChecksPending": {
+      "type": "string",
+      "title": "CI running icon",
+      "description": "Drawn before the checks while some are still running. Spaces count; leave it empty for no icon.",
+      "default": " 󰔟"
+    },
+    "iconUsage": {
+      "type": "string",
+      "title": "Usage icon",
+      "description": "Drawn before the plan usage. Spaces count; leave it empty for no icon.",
+      "default": ""
+    }
+  }
 }

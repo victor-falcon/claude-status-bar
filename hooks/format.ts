@@ -1,4 +1,4 @@
-import type { SessionRateLimit } from 'claude-code'
+import type { PluginOptions, SessionRateLimit } from 'claude-code'
 
 import type { StatusBarSpan } from '../types'
 
@@ -33,13 +33,26 @@ export type GhPullRequest = {
   statusCheckRollup?: RollupEntry[] | null
 }
 
-const ICON_BRANCH = ' '
-const ICON_DIFF = ''
-const ICON_PULL_REQUEST = ' '
-const ICON_CHECKS_PASSED = ' 󰄬'
-const ICON_CHECKS_FAILED = ' '
-const ICON_CHECKS_PENDING = ' 󰔟'
-const ICON_USAGE = ''
+export type StatusSections = {
+  branch: boolean
+  diff: boolean
+  pullRequest: boolean
+  checks: boolean
+  usage: boolean
+}
+
+export type StatusIcons = {
+  branch: string
+  diff: string
+  pullRequest: string
+  checksPassed: string
+  checksFailed: string
+  checksPending: string
+  usage: string
+}
+
+export type StatusOptions = { show: StatusSections; icons: StatusIcons }
+
 
 const COLOR_BRANCH = 'blue'
 const COLOR_ADDED = 'green'
@@ -120,13 +133,41 @@ export function toUsage(rateLimits: readonly SessionRateLimit[]): Usage {
   return { session: percentOf('five_hour'), week: percentOf('seven_day') }
 }
 
-function formatChecks(checks: ChecksSummary): string {
+/**
+ * Reads the mod's `userConfig` values. Their defaults live in plugin.json; a value
+ * that is missing keeps its section shown and draws no icon.
+ */
+export function toStatusOptions(options: PluginOptions): StatusOptions {
+  const isShown = (key: string): boolean => options[key] !== false
+  const iconFor = (key: string): string => {
+    const value = options[key]
+
+    return typeof value === 'string' ? value : ''
+  }
+
+  return {
+    show: {
+      branch: isShown('showBranch'),
+      diff: isShown('showDiff'),
+      pullRequest: isShown('showPullRequest'),
+      checks: isShown('showChecks'),
+      usage: isShown('showUsage'),
+    },
+    icons: {
+      branch: iconFor('iconBranch'),
+      diff: iconFor('iconDiff'),
+      pullRequest: iconFor('iconPullRequest'),
+      checksPassed: iconFor('iconChecksPassed'),
+      checksFailed: iconFor('iconChecksFailed'),
+      checksPending: iconFor('iconChecksPending'),
+      usage: iconFor('iconUsage'),
+    },
+  }
+}
+
+function formatChecks(checks: ChecksSummary, icons: StatusIcons): string {
   const icon =
-    checks.failed > 0
-      ? ICON_CHECKS_FAILED
-      : checks.pending > 0
-        ? ICON_CHECKS_PENDING
-        : ICON_CHECKS_PASSED
+    checks.failed > 0 ? icons.checksFailed : checks.pending > 0 ? icons.checksPending : icons.checksPassed
 
   return `${icon} ${checks.passed}/${checks.total}`
 }
@@ -142,41 +183,41 @@ function usageColor(usage: Usage): string | undefined {
   return highest >= USAGE_WARNING_PERCENT ? COLOR_USAGE_WARNING : undefined
 }
 
-function formatUsage(usage: Usage): StatusBarSpan | undefined {
+function formatUsage(usage: Usage, icons: StatusIcons): StatusBarSpan | undefined {
   if (usage.session === undefined) {
     return undefined
   }
 
   const week = usage.week === undefined ? '' : ` (Week ${Math.round(usage.week)}%)`
-  const text = `${ICON_USAGE}Session usage ${Math.round(usage.session)}%${week}`
+  const text = `${icons.usage}Session usage ${Math.round(usage.session)}%${week}`
   const color = usageColor(usage)
 
   return color === undefined ? { text } : { text, color }
 }
 
-function gitSegments(info: StatusInfo): StatusBarSpan[][] {
+function gitSegments(info: StatusInfo, { show, icons }: StatusOptions): StatusBarSpan[][] {
   const segments: StatusBarSpan[][] = []
 
-  if (info.branch !== undefined) {
-    segments.push([{ text: ICON_BRANCH, color: COLOR_BRANCH }, { text: ` ${info.branch}` }])
+  if (show.branch && info.branch !== undefined) {
+    segments.push([{ text: icons.branch, color: COLOR_BRANCH }, { text: ` ${info.branch}` }])
   }
 
-  if (info.diff !== undefined && (info.diff.added > 0 || info.diff.removed > 0)) {
+  if (show.diff && info.diff !== undefined && (info.diff.added > 0 || info.diff.removed > 0)) {
     segments.push([
-      { text: `${ICON_DIFF}` },
+      { text: icons.diff },
       { text: `+${info.diff.added}`, color: COLOR_ADDED },
       { text: '' },
       { text: `-${info.diff.removed}`, color: COLOR_REMOVED },
     ])
   }
 
-  if (info.pullRequest !== undefined) {
+  if (show.pullRequest && info.pullRequest !== undefined) {
     const color = PULL_REQUEST_COLORS[info.pullRequest.state]
-    segments.push([{ text: `${ICON_PULL_REQUEST} ${info.pullRequest.state}`, color }])
+    segments.push([{ text: `${icons.pullRequest} ${info.pullRequest.state}`, color }])
+  }
 
-    if (info.pullRequest.checks.total > 0) {
-      segments.push([{ text: formatChecks(info.pullRequest.checks) }])
-    }
+  if (show.checks && info.pullRequest !== undefined && info.pullRequest.checks.total > 0) {
+    segments.push([{ text: formatChecks(info.pullRequest.checks, icons) }])
   }
 
   return segments
@@ -187,9 +228,9 @@ function joinSpans(groups: StatusBarSpan[][], separator: string): StatusBarSpan[
 }
 
 /** The line as colored spans; a span with no `color` is drawn dim, like the hint it follows. */
-export function formatStatus(info: StatusInfo): StatusBarSpan[] | undefined {
-  const usage = formatUsage(info.usage)
-  const sections = [joinSpans(gitSegments(info), ' '), usage === undefined ? [] : [usage]].filter(
+export function formatStatus(info: StatusInfo, options: StatusOptions): StatusBarSpan[] | undefined {
+  const usage = options.show.usage ? formatUsage(info.usage, options.icons) : undefined
+  const sections = [joinSpans(gitSegments(info, options), ' '), usage === undefined ? [] : [usage]].filter(
     section => section.length > 0,
   )
 

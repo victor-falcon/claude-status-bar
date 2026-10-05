@@ -2,8 +2,8 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { StatusBarSpans } from '../types'
-import { formatStatus, parseNumstat, toPullRequest, toUsage } from './format'
-import type { GhPullRequest, StatusInfo } from './format'
+import { formatStatus, parseNumstat, toPullRequest, toStatusOptions, toUsage } from './format'
+import type { DiffSize, GhPullRequest, StatusInfo, StatusOptions } from './format'
 
 const GIT_REFRESH_MS = 5_000
 const PULL_REQUEST_REFRESH_MS = 60_000
@@ -16,10 +16,11 @@ const info: StatusInfo = { usage: {} }
 const progress = { isRefreshingGit: false, isRefreshingPullRequest: false }
 let lastLine: string | undefined
 let defaultBranch: string | undefined
+let statusOptions: StatusOptions = toStatusOptions({})
 
 /** Stores the line for the PromptHint hook; writing it redraws the hint. */
 async function paint($: EngineInterface): Promise<void> {
-  const spans = formatStatus(info) ?? null
+  const spans = formatStatus(info, statusOptions) ?? null
   const line = JSON.stringify(spans)
 
   if (line !== lastLine) {
@@ -48,18 +49,24 @@ async function readBranchAndDiff($: EngineInterface): Promise<boolean> {
 
   const branch =
     (await git($, ['branch', '--show-current'])) || (await git($, ['rev-parse', '--short', 'HEAD']))
-  const base = (await git($, ['merge-base', 'HEAD', defaultBranch])) ?? 'HEAD'
-  const numstat = await git($, ['diff', '--numstat', base])
   const hasBranchChanged = branch !== info.branch
 
   info.branch = branch
-  info.diff = numstat === undefined ? undefined : parseNumstat(numstat)
+  info.diff = statusOptions.show.diff ? await readDiff($, defaultBranch) : undefined
 
   if (hasBranchChanged) {
     info.pullRequest = undefined
   }
 
   return hasBranchChanged
+}
+
+/** Lines changed against the merge base with the default branch, uncommitted work included. */
+async function readDiff($: EngineInterface, baseBranch: string): Promise<DiffSize | undefined> {
+  const base = (await git($, ['merge-base', 'HEAD', baseBranch])) ?? 'HEAD'
+  const numstat = await git($, ['diff', '--numstat', base])
+
+  return numstat === undefined ? undefined : parseNumstat(numstat)
 }
 
 /** Reads branch and diff size; resolves whether the branch changed since the last read. */
@@ -84,8 +91,9 @@ async function refreshGit($: EngineInterface): Promise<boolean> {
 
 async function refreshPullRequest($: EngineInterface): Promise<void> {
   const branch = info.branch
+  const isWanted = statusOptions.show.pullRequest || statusOptions.show.checks
 
-  if (branch === undefined || `origin/${branch}` === defaultBranch || progress.isRefreshingPullRequest) {
+  if (!isWanted || branch === undefined || `origin/${branch}` === defaultBranch || progress.isRefreshingPullRequest) {
     return
   }
 
@@ -119,7 +127,9 @@ async function refreshGitThenPullRequestOnBranchChange($: EngineInterface): Prom
   }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  statusOptions = toStatusOptions(options)
+
   on('session.start', async ($, e, next) => {
     const started = await next(e)
 
