@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-status-bar",
+  "description": "A Claude Code mod that shows git, pull request, CI and plan usage under the prompt",
+  "owner": {
+    "name": "Víctor Falcón",
+    "url": "https://github.com/victor-falcon"
+  },
+  "plugins": [
+    {
+      "name": "status-bar",
+      "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

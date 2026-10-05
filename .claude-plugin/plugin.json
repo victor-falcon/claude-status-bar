@@ -1,0 +1,14 @@
+{
+  "name": "status-bar",
+  "version": "0.3.0",
+  "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
+  "author": {
+    "name": "Víctor Falcón",
+    "url": "https://github.com/victor-falcon"
+  },
+  "homepage": "https://github.com/victor-falcon/claude-status-bar",
+  "repository": "https://github.com/victor-falcon/claude-status-bar",
+  "license": "MIT",
+  "keywords": ["status-line", "git", "github", "pull-request", "ci", "usage", "mod"],
+  "types": "./types/index.d.ts"
+}
