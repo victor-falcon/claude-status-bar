@@ -1,6 +1,6 @@
 {
   "name": "status-bar",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
   "author": {
     "name": "Víctor Falcón",
@@ -35,7 +35,7 @@
     "showPullRequest": {
       "type": "boolean",
       "title": "Show pull request",
-      "description": "The state of the branch's pull request: Merged, Closed, Draft or Open. Needs the GitHub CLI.",
+      "description": "The number and state (Merged, Closed, Draft or Open) of the branch's pull request, linked to it. Needs the GitHub CLI.",
       "default": true
     },
     "showChecks": {
@@ -63,7 +63,7 @@
     "iconPullRequest": {
       "type": "string",
       "title": "Pull request icon",
-      "description": "Drawn before the pull request state. Leave it empty for the Nerd Font GitHub icon, or write none for no icon. Spaces count."
+      "description": "Drawn before the pull request number. Leave it empty for the Nerd Font GitHub icon, or write none for no icon. Spaces count."
     },
     "iconChecksPassed": {
       "type": "string",

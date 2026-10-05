@@ -9,8 +9,8 @@ engine's own hint line (`? for shortcuts`, `esc to interrupt`…):
 | --- | --- | --- |
 | Branch | Current branch, or the short SHA on a detached HEAD | Branch icon colored |
 | Diff | Lines added and removed against the merge base with the default branch, uncommitted work included | `+N` green, `-N` red |
-| Pull request | State of the branch's PR: `Merged`, `Closed`, `Draft` or `Open` | Purple, red, gray, green |
-| CI | Passed checks out of the total, with an icon for all passed, any failed, or still running | — |
+| Pull request | The branch's PR number and state, as `#42 (Open)`, linked to the PR. The state is `Merged`, `Closed`, `Draft` or `Open` | Purple, red, gray, green |
+| CI | Passed checks out of the total, with an icon for all passed, any failed, or still running | Passed count green when all passed, red when any failed |
 | Usage | Your plan's 5-hour session usage and weekly usage | Orange from 65%, red from 75% (whichever window is fuller) |
 
 Segments with nothing to show are left out: outside a git repository there is no git part, without a PR there is no
@@ -51,12 +51,12 @@ stores them in `settings.json` under `pluginConfigs`, and the mod reloads as soo
 | --- | --- | --- |
 | `showBranch` | `true` | Show the branch |
 | `showDiff` | `true` | Show the lines added and removed (off, the mod skips `git diff`) |
-| `showPullRequest` | `true` | Show the pull request state |
+| `showPullRequest` | `true` | Show the pull request number, linked, and its state |
 | `showChecks` | `true` | Show the CI checks (with the pull request off too, the mod never calls `gh`) |
 | `showUsage` | `true` | Show the plan usage |
 | `iconBranch` | Nerd Font branch | Drawn before the branch name |
 | `iconDiff` | none | Drawn before the added and removed lines |
-| `iconPullRequest` | Nerd Font GitHub | Drawn before the pull request state |
+| `iconPullRequest` | Nerd Font GitHub | Drawn before the pull request number |
 | `iconChecksPassed` | Nerd Font check | Drawn before the checks when every one passed |
 | `iconChecksFailed` | Nerd Font cross | Drawn before the checks when any failed |
 | `iconChecksPending` | Nerd Font hourglass | Drawn before the checks while some are still running |

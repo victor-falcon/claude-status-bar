@@ -101,7 +101,7 @@ async function refreshPullRequest($: EngineInterface): Promise<void> {
 
   try {
     const { exitCode, stdout } = await $.process.run(
-      ['gh', 'pr', 'view', '--json', 'state,isDraft,statusCheckRollup'],
+      ['gh', 'pr', 'view', '--json', 'number,url,state,isDraft,statusCheckRollup'],
       { timeoutMs: 15_000 },
     )
 
@@ -176,16 +176,18 @@ export const register: Register = (on, options) => {
     }
 
     const engineHint = await next(e)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Link, Text } = $.ui.resolve(e)
 
     return (
       <Box>
         {engineHint}
         <Text wrap="truncate-end">
           <Text dimColor>{HINT_SEPARATOR}</Text>
-          {spans.map(span =>
-            span.color === undefined ? <Text dimColor>{span.text}</Text> : <Text color={span.color}>{span.text}</Text>,
-          )}
+          {spans.map(span => {
+            const text = span.href === undefined ? span.text : <Link href={span.href} label={span.text} />
+
+            return span.color === undefined ? <Text dimColor>{text}</Text> : <Text color={span.color}>{text}</Text>
+          })}
         </Text>
       </Box>
     )

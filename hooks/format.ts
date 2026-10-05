@@ -6,7 +6,7 @@ export type PullRequestState = 'Merged' | 'Draft' | 'Open' | 'Closed'
 
 export type ChecksSummary = { passed: number; failed: number; pending: number; total: number }
 
-export type PullRequest = { state: PullRequestState; checks: ChecksSummary }
+export type PullRequest = { number: number; url: string; state: PullRequestState; checks: ChecksSummary }
 
 export type DiffSize = { added: number; removed: number }
 
@@ -28,6 +28,8 @@ export type RollupEntry = {
 }
 
 export type GhPullRequest = {
+  number: number
+  url: string
   state: string
   isDraft: boolean
   statusCheckRollup?: RollupEntry[] | null
@@ -68,6 +70,8 @@ const NO_ICON = 'none'
 const COLOR_BRANCH = 'blue'
 const COLOR_ADDED = 'green'
 const COLOR_REMOVED = 'red'
+const COLOR_CHECKS_PASSED = 'green'
+const COLOR_CHECKS_FAILED = 'red'
 const PULL_REQUEST_COLORS: Record<PullRequestState, string> = {
   Merged: 'magenta',
   Closed: 'red',
@@ -134,7 +138,12 @@ export function toPullRequest(pullRequest: GhPullRequest): PullRequest {
           ? 'Draft'
           : 'Open'
 
-  return { state, checks: summarizeChecks(pullRequest.statusCheckRollup ?? []) }
+  return {
+    number: pullRequest.number,
+    url: pullRequest.url,
+    state,
+    checks: summarizeChecks(pullRequest.statusCheckRollup ?? []),
+  }
 }
 
 export function toUsage(rateLimits: readonly SessionRateLimit[]): Usage {
@@ -181,11 +190,20 @@ export function toStatusOptions(options: PluginOptions): StatusOptions {
   }
 }
 
-function formatChecks(checks: ChecksSummary, icons: StatusIcons): string {
-  const icon =
-    checks.failed > 0 ? icons.checksFailed : checks.pending > 0 ? icons.checksPending : icons.checksPassed
+/** The passed count is red when any check failed, green when all passed, and dim while some still run. */
+function formatChecks(checks: ChecksSummary, icons: StatusIcons): StatusBarSpan[] {
+  const passed = { text: `${checks.passed}` }
+  const total = { text: `/${checks.total}` }
 
-  return `${icon} ${checks.passed}/${checks.total}`
+  if (checks.failed > 0) {
+    return [{ text: `${icons.checksFailed} ` }, { ...passed, color: COLOR_CHECKS_FAILED }, total]
+  }
+
+  if (checks.pending > 0) {
+    return [{ text: `${icons.checksPending} ` }, passed, total]
+  }
+
+  return [{ text: `${icons.checksPassed} ` }, { ...passed, color: COLOR_CHECKS_PASSED }, total]
 }
 
 /** Orange from 65% and red from 75% of whichever window is fuller, judged on the percent shown. */
@@ -228,12 +246,16 @@ function gitSegments(info: StatusInfo, { show, icons }: StatusOptions): StatusBa
   }
 
   if (show.pullRequest && info.pullRequest !== undefined) {
-    const color = PULL_REQUEST_COLORS[info.pullRequest.state]
-    segments.push([{ text: `${icons.pullRequest} ${info.pullRequest.state}`, color }])
+    const { number, url, state } = info.pullRequest
+    const color = PULL_REQUEST_COLORS[state]
+    segments.push([
+      { text: `${icons.pullRequest} `, color },
+      { text: `#${number} (${state})`, href: url, color },
+    ])
   }
 
   if (show.checks && info.pullRequest !== undefined && info.pullRequest.checks.total > 0) {
-    segments.push([{ text: formatChecks(info.pullRequest.checks, icons) }])
+    segments.push(formatChecks(info.pullRequest.checks, icons))
   }
 
   return segments

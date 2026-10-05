@@ -22,7 +22,11 @@ const ok = (stdout: string): ProcessRunResult => ({
 
 const failed: ProcessRunResult = { ...ok(''), exitCode: 1 }
 
+const PULL_REQUEST_URL = 'https://github.com/acme/app/pull/42'
+
 const PULL_REQUEST = JSON.stringify({
+  number: 42,
+  url: PULL_REQUEST_URL,
   state: 'OPEN',
   isDraft: false,
   statusCheckRollup: [
@@ -38,7 +42,7 @@ const HINT: RenderPropsOf['PromptHint'] = { isDraft: false, isWorking: false, hi
 const FEATURE_BRANCH: StatusInfo = {
   branch: 'feat/x',
   diff: { added: 45, removed: 12 },
-  pullRequest: { state: 'Open', checks: { passed: 5, failed: 0, pending: 0, total: 5 } },
+  pullRequest: { number: 42, url: PULL_REQUEST_URL, state: 'Open', checks: { passed: 5, failed: 0, pending: 0, total: 5 } },
   usage: { session: 23.4, week: 40.6 },
 }
 
@@ -69,7 +73,7 @@ function stubWorld(on: On, branch: string, commands: string[] = []): void {
     const command = e.argv.join(' ')
     commands.push(command)
 
-    if (command === 'gh pr view --json state,isDraft,statusCheckRollup') {
+    if (command === 'gh pr view --json number,url,state,isDraft,statusCheckRollup') {
       return { value: ok(PULL_REQUEST) }
     }
 
@@ -125,14 +129,22 @@ describe('format', () => {
   })
 
   test('maps the PR state, draft included', () => {
-    expect(toPullRequest({ state: 'OPEN', isDraft: true }).state).toBe('Draft')
-    expect(toPullRequest({ state: 'MERGED', isDraft: false }).state).toBe('Merged')
-    expect(toPullRequest({ state: 'CLOSED', isDraft: false }).state).toBe('Closed')
-    expect(toPullRequest({ state: 'OPEN', isDraft: false }).state).toBe('Open')
+    const pullRequest = { number: 42, url: PULL_REQUEST_URL }
+
+    expect(toPullRequest({ ...pullRequest, state: 'OPEN', isDraft: true }).state).toBe('Draft')
+    expect(toPullRequest({ ...pullRequest, state: 'MERGED', isDraft: false }).state).toBe('Merged')
+    expect(toPullRequest({ ...pullRequest, state: 'CLOSED', isDraft: false }).state).toBe('Closed')
+    expect(toPullRequest({ ...pullRequest, state: 'OPEN', isDraft: false }).state).toBe('Open')
   })
 
   test('draws every segment in order', () => {
-    expect(plain(FEATURE_BRANCH)).toBe('feat/x +45-12 Open 5/5 · Session usage 23% (Week 41%)')
+    expect(plain(FEATURE_BRANCH)).toBe('feat/x +45-12 #42 (Open) 5/5 · Session usage 23% (Week 41%)')
+  })
+
+  test('links the PR number and state to the PR', () => {
+    const links = formatStatus(FEATURE_BRANCH, ALL_SECTIONS)?.filter(span => span.href !== undefined)
+
+    expect(links).toEqual([{ text: '#42 (Open)', href: PULL_REQUEST_URL, color: 'green' }])
   })
 
   test('leaves out what it does not know', () => {
@@ -144,8 +156,8 @@ describe('format', () => {
 
 describe('options', () => {
   test('hides the sections switched off', () => {
-    expect(plain(FEATURE_BRANCH, toStatusOptions({ showDiff: false, showUsage: false }))).toBe('feat/x Open 5/5')
-    expect(plain(FEATURE_BRANCH, toStatusOptions({ showPullRequest: false }))).not.toContain('Open')
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showDiff: false, showUsage: false }))).toBe('feat/x #42 (Open) 5/5')
+    expect(plain(FEATURE_BRANCH, toStatusOptions({ showPullRequest: false }))).not.toMatch(/Open|#42/)
     expect(plain(FEATURE_BRANCH, toStatusOptions({ showPullRequest: false }))).toContain('5/5')
     expect(plain(FEATURE_BRANCH, toStatusOptions({ showBranch: false, showChecks: false }))).not.toMatch(/feat\/x|5\/5/)
   })
@@ -156,7 +168,7 @@ describe('options', () => {
     )
 
     expect(line?.startsWith('B> feat/x')).toBe(true)
-    expect(line).toContain('PR> Open')
+    expect(line).toContain('PR> #42 (Open)')
     expect(line).toContain('OK> 5/5')
   })
 
@@ -177,7 +189,7 @@ describe('options', () => {
     const ui = await $.ui.mount({ plugin: 'status-bar', surface: 'terminal', component: 'PromptHint', props: HINT })
 
     expect((await ui.find({ type: 'Text', text: /^\u{EA64}\s*$/u }))?.props.color).toBe('blue')
-    expect(await ui.find({ type: 'Text', text: /\u{F467} 3\/4$/u })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /\u{F467} 3\/4 ·/u })).toBeDefined()
   })
 })
 
@@ -191,12 +203,30 @@ describe('colors', () => {
 
   test('colors the PR state by what happened to it', () => {
     const colorFor = (state: 'Merged' | 'Closed' | 'Draft' | 'Open'): string | undefined =>
-      colorOf({ ...FEATURE_BRANCH, pullRequest: { state, checks: { passed: 0, failed: 0, pending: 0, total: 0 } } }, state)
+      colorOf(
+        {
+          ...FEATURE_BRANCH,
+          pullRequest: { number: 42, url: PULL_REQUEST_URL, state, checks: { passed: 0, failed: 0, pending: 0, total: 0 } },
+        },
+        state,
+      )
 
     expect(colorFor('Merged')).toBe('magenta')
     expect(colorFor('Closed')).toBe('red')
     expect(colorFor('Draft')).toBe('gray')
     expect(colorFor('Open')).toBe('green')
+  })
+
+  test('colors the passed checks green when all passed, red when any failed, dim while some run', () => {
+    const passedColor = (checks: { passed: number; failed: number; pending: number; total: number }) =>
+      formatStatus({ ...FEATURE_BRANCH, pullRequest: { ...FEATURE_BRANCH.pullRequest!, checks } }, ALL_SECTIONS)?.find(
+        span => span.text === `${checks.passed}`,
+      )?.color
+
+    expect(passedColor({ passed: 5, failed: 0, pending: 0, total: 5 })).toBe('green')
+    expect(passedColor({ passed: 3, failed: 1, pending: 0, total: 4 })).toBe('red')
+    expect(passedColor({ passed: 3, failed: 1, pending: 1, total: 5 })).toBe('red')
+    expect(passedColor({ passed: 2, failed: 0, pending: 1, total: 3 })).toBeUndefined()
   })
 
   test('keeps the usage dim until either window nears its limit', () => {
@@ -233,13 +263,20 @@ describe('prompt hint', () => {
         plain({
           branch: 'feat/status-bar',
           diff: { added: 45, removed: 12 },
-          pullRequest: { state: 'Open', checks: { passed: 3, failed: 1, pending: 0, total: 4 } },
+          pullRequest: {
+            number: 42,
+            url: PULL_REQUEST_URL,
+            state: 'Open',
+            checks: { passed: 3, failed: 1, pending: 0, total: 4 },
+          },
           usage: { session: 23.4, week: 40.6 },
         }),
       )
       expect((await ui.find({ type: 'Text', text: /^\+45$/ }))?.props.color).toBe('green')
       expect((await ui.find({ type: 'Text', text: /^-12$/ }))?.props.color).toBe('red')
-      expect((await ui.find({ type: 'Text', text: /^\s*\S*\s*Open$/ }))?.props.color).toBe('green')
+      expect((await ui.find({ type: 'Text', text: /^#42 \(Open\)$/ }))?.props.color).toBe('green')
+      expect((await ui.find({ type: 'Link', text: '#42 (Open)' }))?.props.href).toBe(PULL_REQUEST_URL)
+      expect((await ui.find({ type: 'Text', text: /^3$/ }))?.props.color).toBe('red')
       await ui.unmount()
     }
   })
