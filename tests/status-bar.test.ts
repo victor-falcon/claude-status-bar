@@ -116,7 +116,7 @@ describe('format', () => {
   })
 
   test('draws every segment in order', () => {
-    expect(plain(FEATURE_BRANCH)).toBe('feat/x +45 -12 Open 5/5 · Session usage 23% (Week 41%)')
+    expect(plain(FEATURE_BRANCH)).toBe('feat/x +45-12 Open 5/5 · Session usage 23% (Week 41%)')
   })
 
   test('leaves out what it does not know', () => {
@@ -186,7 +186,7 @@ describe('prompt hint', () => {
       )
       expect((await ui.find({ type: 'Text', text: /^\+45$/ }))?.props.color).toBe('green')
       expect((await ui.find({ type: 'Text', text: /^-12$/ }))?.props.color).toBe('red')
-      expect((await ui.find({ type: 'Text', text: /^\S*\s*Open$/ }))?.props.color).toBe('green')
+      expect((await ui.find({ type: 'Text', text: /^\s*\S*\s*Open$/ }))?.props.color).toBe('green')
       await ui.unmount()
     }
   })

@@ -1,6 +1,6 @@
 {
   "name": "status-bar",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Status line with git branch, diff size, PR state, CI checks and plan usage",
   "author": {
     "name": "Víctor Falcón",

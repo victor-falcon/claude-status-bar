@@ -35,10 +35,10 @@ export type GhPullRequest = {
 
 const ICON_BRANCH = ' '
 const ICON_DIFF = ''
-const ICON_PULL_REQUEST = ' '
-const ICON_CHECKS_PASSED = '󰄬 '
-const ICON_CHECKS_FAILED = ' '
-const ICON_CHECKS_PENDING = '󰔟 '
+const ICON_PULL_REQUEST = ' '
+const ICON_CHECKS_PASSED = ' 󰄬'
+const ICON_CHECKS_FAILED = ' '
+const ICON_CHECKS_PENDING = ' 󰔟'
 const ICON_USAGE = ''
 
 const COLOR_BRANCH = 'blue'
@@ -165,7 +165,7 @@ function gitSegments(info: StatusInfo): StatusBarSpan[][] {
     segments.push([
       { text: `${ICON_DIFF}` },
       { text: `+${info.diff.added}`, color: COLOR_ADDED },
-      { text: ' ' },
+      { text: '' },
       { text: `-${info.diff.removed}`, color: COLOR_REMOVED },
     ])
   }

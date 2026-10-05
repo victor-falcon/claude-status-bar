@@ -4,7 +4,7 @@ A [Claude Code](https://claude.com/claude-code) mod that adds a colored status l
 engine's own hint (`? for shortcuts`, `esc to interrupt`…):
 
 ```
-<branch> main  <diff> +45 -12  <pr> Open  <ci> 5/5 · Session usage 23% (Week 41%)
+<branch> main +45-12 <pr> Open <ci> 5/5 · Session usage 23% (Week 41%)
 ```
 
 | Segment | What it shows | Color |
