@@ -1,11 +1,9 @@
 # status-bar
 
-A [Claude Code](https://claude.com/claude-code) mod that adds a colored status line under the prompt, next to the
-engine's own hint (`? for shortcuts`, `esc to interrupt`…):
+A [Claude Code](https://claude.com/claude-code) mod that adds a colored status line under the prompt, with the
+engine's own hint line (`? for shortcuts`, `esc to interrupt`…):
 
-```
-<branch> main +45-12 <pr> Open <ci> 5/5 · Session usage 23% (Week 41%)
-```
+![The status line under the prompt: branch, diff, pull request state, CI checks and plan usage](assets/screenshot.png)
 
 | Segment | What it shows | Color |
 | --- | --- | --- |
